@@ -6,7 +6,8 @@ This project is a **Security Orchestration, Automation, and Response (SOAR)** pl
 ## Architecture
 The workflow ingests emails, parses content, enriches data via Threat Intelligence, and handles alerting based on severity.
 
-![Workflow Architecture]![Uploading Workflow.png…]()
+![Workflow Architecture]!
+[Uploading Workflow.png…]()
 
 
 ### The Logic Flow
@@ -25,7 +26,9 @@ The workflow ingests emails, parses content, enriches data via Threat Intelligen
 
 ## Evidence of Execution
 **Successful Detection of Malicious Payload:**
-![Telegram Alert](assets/telegram_alert.png)
+![Telegram Alert]
+![Uploading tel_msg_new.png…]()
+
 
 ## How to Use
 1.  Import `workflow.json` into n8n.
