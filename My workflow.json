@@ -1,0 +1,195 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "includeSpamTrash": true,
+          "readStatus": "unread"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -432,
+        -144
+      ],
+      "id": "12af6acc-3db4-4f0a-9808-09b13ac4b15b",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Y1L04UVh5Euiu4H9",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1. GET DATA: Combine ALL fields to ensure we don't miss the link\n// We merge body_text + html_body + snippet into one string\nconst emailFields = item.json.email_fields || {};\nconst textToSearch = [\n    emailFields.body_text, \n    emailFields.html_body, \n    item.json.snippet, \n    item.json.text\n].join(\" \"); // Join them with a space\n\n// 2. EXTRACT: Regex looks for http:// or https://\nconst urlRegex = /(https?:\\/\\/[^\\s\"<>]+)/g; \n// Added \" and < > to the exclusion list to handle HTML tags cleaner\n\nconst match = textToSearch.match(urlRegex);\n\nif (!match) {\n  // Debugging: This helps you see exactly what text was searched\n  return { \n      json: { \n          hasUrl: false, \n          error: \"No URL found\",\n          debug_searchedText: textToSearch.substring(0, 100) + \"...\" \n      } \n  };\n}\n\n// 3. CLEAN & ENCODE\n// HTML often leaves trailing quotes or tags attached to the URL.\n// We clean them off.\nlet extractedUrl = match[0].replace(/['\"<>\\])]+$/, \"\");\n\n// 4. VirusTotal ID Generation\nconst urlId = Buffer.from(extractedUrl).toString('base64').replace(/=/g, '');\n\nreturn {\n  json: {\n    analyzedUrl: extractedUrl,\n    vtId: urlId,\n    hasUrl: true\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        -192
+      ],
+      "id": "56fed5d4-c45d-4827-be05-0eb994578f3a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/urls/{{ $json.vtId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        16,
+        -272
+      ],
+      "id": "0a048727-9945-42e5-81a8-7d6437f396ac",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2kBKVNW8WaEOITL3",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "23870ecc-b8c1-4857-8217-3451e65c4393",
+              "leftValue": "={{ $json.data.attributes.last_analysis_stats.malicious }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        -64
+      ],
+      "id": "1f7601d1-74fa-4b02-8c1d-e4ad6def0ba0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "[YOUR_TELEGRAM_ID]",
+        "text": "=🚨 *SOC Phishing Alert*\n\n*Status:* Malicious\n*URL:*{{ $('Code in JavaScript').item.json.analyzedUrl }}\n*Risk Score:* {{ $json.data.attributes.last_analysis_stats.malicious }} / 90 Vendors\n*Scan ID:* `{{ $json.data.id }}`\n\n_Action: Ticket Created automatically._",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        -208
+      ],
+      "id": "60998be9-df8e-4433-b642-61591c290105",
+      "name": "Send a text message",
+      "webhookId": "31dfc259-49ff-48b6-ae99-b20d5385a6d1",
+      "credentials": {
+        "telegramApi": {
+          "id": "NQbwRGJQNE1azUGt",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Gmail Trigger": [
+      
+    ]
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a134fc23-e318-4299-a662-dd9f2ad21d8c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28434dc855d056455231479348385c9ef24a3a19771f87be3edce46f2b723de0"
+  },
+  "id": "HL09fVHo6JWhuffl",
+  "tags": []
+}
