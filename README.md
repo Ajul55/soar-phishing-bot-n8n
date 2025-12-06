@@ -8,6 +8,7 @@ The workflow ingests emails, parses content, enriches data via Threat Intelligen
 
 ![Workflow Architecture]!
 [Uploading Workflow.png…]()
+![Uploading Workflow.png…]()
 
 
 ### The Logic Flow
