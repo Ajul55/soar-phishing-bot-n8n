@@ -6,7 +6,8 @@ This project is a **Security Orchestration, Automation, and Response (SOAR)** pl
 ## Architecture
 The workflow ingests emails, parses content, enriches data via Threat Intelligence, and handles alerting based on severity.
 
-![Workflow Architecture](assets/architecture.png)
+![Workflow Architecture]![Uploading Workflow.png…]()
+
 
 ### The Logic Flow
 1.  **Ingestion:** Monitors Gmail Inbox for reported phishing attempts.
